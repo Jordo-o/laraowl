@@ -412,66 +412,64 @@ export default function RecordShow({
                     </div>
                 </Card>
 
-                {/* Headers Card (not collected for mail records) */}
-                {!isMail && (
-                    <Card className="border-border bg-card shadow-2xl">
-                        <Collapsible
-                            open={expandedHeaders}
-                            onOpenChange={setExpandedHeaders}
-                        >
-                            <CollapsibleTrigger asChild>
-                                <div className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-muted/30">
-                                    <h3 className="text-xs font-bold text-foreground uppercase">
-                                        Headers
-                                    </h3>
-                                    <div className="flex h-5 w-5 items-center justify-center rounded bg-muted">
-                                        {expandedHeaders ? (
-                                            <ChevronDown className="h-3 w-3" />
-                                        ) : (
-                                            <ChevronRight className="h-3 w-3" />
-                                        )}
-                                    </div>
+                {/* Headers Card */}
+                <Card className="border-border bg-card shadow-2xl">
+                    <Collapsible
+                        open={expandedHeaders}
+                        onOpenChange={setExpandedHeaders}
+                    >
+                        <CollapsibleTrigger asChild>
+                            <div className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-muted/30">
+                                <h3 className="text-xs font-bold text-foreground uppercase">
+                                    Headers
+                                </h3>
+                                <div className="flex h-5 w-5 items-center justify-center rounded bg-muted">
+                                    {expandedHeaders ? (
+                                        <ChevronDown className="h-3 w-3" />
+                                    ) : (
+                                        <ChevronRight className="h-3 w-3" />
+                                    )}
                                 </div>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <div className="border-t border-border p-6 text-xs">
-                                    {(() => {
-                                        let headersObj = payload.headers || {};
+                            </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <div className="border-t border-border p-6 text-xs">
+                                {(() => {
+                                    let headersObj = payload.headers || {};
 
-                                        if (typeof headersObj === 'string') {
-                                            try {
-                                                headersObj =
-                                                    JSON.parse(headersObj);
-                                            } catch {
-                                                // ignore
-                                            }
+                                    if (typeof headersObj === 'string') {
+                                        try {
+                                            headersObj =
+                                                JSON.parse(headersObj);
+                                        } catch {
+                                            // ignore
                                         }
+                                    }
 
-                                        return (
-                                            <CodeBlock
-                                                language="json"
-                                                style={vscDarkPlus}
-                                                customStyle={{
-                                                    margin: 0,
-                                                    borderRadius: '0.5rem',
-                                                    border: '1px solid hsl(var(--border))',
-                                                }}
-                                                wrapLines={true}
-                                                wrapLongLines={true}
-                                            >
-                                                {JSON.stringify(
-                                                    headersObj,
-                                                    null,
-                                                    4,
-                                                )}
-                                            </CodeBlock>
-                                        );
-                                    })()}
-                                </div>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    </Card>
-                )}
+                                    return (
+                                        <CodeBlock
+                                            language="json"
+                                            style={vscDarkPlus}
+                                            customStyle={{
+                                                margin: 0,
+                                                borderRadius: '0.5rem',
+                                                border: '1px solid hsl(var(--border))',
+                                            }}
+                                            wrapLines={true}
+                                            wrapLongLines={true}
+                                        >
+                                            {JSON.stringify(
+                                                headersObj,
+                                                null,
+                                                4,
+                                            )}
+                                        </CodeBlock>
+                                    );
+                                })()}
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                </Card>
 
                 {/* Request Payload Card */}
                 {(() => {
@@ -540,152 +538,150 @@ export default function RecordShow({
                     );
                 })()}
 
-                {/* Timeline Card (request-oriented, hidden for mail records) */}
-                {!isMail && (
-                    <Card className="border-border bg-card p-8 shadow-2xl">
-                        <div className="mb-8 flex items-center justify-between">
-                            <h3 className="text-xs font-bold text-foreground uppercase">
-                                Timeline
-                            </h3>
-                            <div className="flex gap-12 text-[10px] font-bold text-muted-foreground uppercase">
-                                <span>0ms</span>
-                                <span>
-                                    {((payload.duration || 0) / 1000).toFixed(
-                                        0,
-                                    )}
-                                    ms
-                                </span>
-                            </div>
+                {/* Timeline Card (request-oriented) */}
+                <Card className="border-border bg-card p-8 shadow-2xl">
+                    <div className="mb-8 flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-foreground uppercase">
+                            Timeline
+                        </h3>
+                        <div className="flex gap-12 text-[10px] font-bold text-muted-foreground uppercase">
+                            <span>0ms</span>
+                            <span>
+                                {((payload.duration || 0) / 1000).toFixed(
+                                    0,
+                                )}
+                                ms
+                            </span>
                         </div>
+                    </div>
 
-                        <div className="space-y-4">
-                            <div className="relative border-l border-border pl-4">
-                                <div className="mb-2 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                                        <span className="text-[10px] font-bold tracking-widest uppercase">
-                                            Request {payload.route_path}
-                                        </span>
-                                    </div>
-                                    <div className="flex h-5 items-center gap-2 rounded border border-emerald-500/30 bg-emerald-500/20 px-2">
-                                        <span className="text-[9px] font-bold text-emerald-400 uppercase">
-                                            {record.type.toUpperCase()}
-                                        </span>
-                                        {isRequest && (
-                                            <Badge className="h-3 rounded-sm border-none bg-emerald-500 px-1 text-[9px]">
-                                                {payload.status_code}
-                                            </Badge>
-                                        )}
-                                        <span className="font-mono text-[10px] text-foreground">
-                                            {(
-                                                (payload.duration || 0) / 1000
-                                            ).toFixed(2)}
-                                            ms
-                                        </span>
-                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                            {title}
-                                        </span>
-                                    </div>
+                    <div className="space-y-4">
+                        <div className="relative border-l border-border pl-4">
+                            <div className="mb-2 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-[10px] font-bold tracking-widest uppercase">
+                                        Request {payload.route_path}
+                                    </span>
                                 </div>
-
-                                {/* Sub-items (Dynamic from relatedRecords) */}
-                                <div className="mt-4 ml-4 space-y-3">
+                                <div className="flex h-5 items-center gap-2 rounded border border-emerald-500/30 bg-emerald-500/20 px-2">
+                                    <span className="text-[9px] font-bold text-emerald-400 uppercase">
+                                        {record.type.toUpperCase()}
+                                    </span>
                                     {isRequest && (
-                                        <>
-                                            <div className="group flex items-center justify-between">
-                                                <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
+                                        <Badge className="h-3 rounded-sm border-none bg-emerald-500 px-1 text-[9px]">
+                                            {payload.status_code}
+                                        </Badge>
+                                    )}
+                                    <span className="font-mono text-[10px] text-foreground">
+                                        {(
+                                            (payload.duration || 0) / 1000
+                                        ).toFixed(2)}
+                                        ms
+                                    </span>
+                                    <span className="font-mono text-[10px] text-muted-foreground">
+                                        {title}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Sub-items (Dynamic from relatedRecords) */}
+                            <div className="mt-4 ml-4 space-y-3">
+                                {isRequest && (
+                                    <>
+                                        <div className="group flex items-center justify-between">
+                                            <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
+                                                Bootstrap
+                                            </span>
+                                            <div className="flex h-6 w-[70%] items-center justify-between rounded border border-border bg-muted px-3">
+                                                <span className="text-[10px] font-bold uppercase">
                                                     Bootstrap
                                                 </span>
-                                                <div className="flex h-6 w-[70%] items-center justify-between rounded border border-border bg-muted px-3">
-                                                    <span className="text-[10px] font-bold uppercase">
-                                                        Bootstrap
+                                                <span className="font-mono text-[10px]">
+                                                    {(
+                                                        (payload.bootstrap ||
+                                                            0) / 1000
+                                                    ).toFixed(2)}
+                                                    ms
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {relatedRecords.map((sub, i) => (
+                                            <div
+                                                key={i}
+                                                className={`group flex items-center justify-between ${highlight_record_id === sub.id ? 'rounded ring-1 ring-blue-500 ring-offset-2 ring-offset-[#111111]' : ''}`}
+                                            >
+                                                <div className="ml-4 flex items-center gap-2">
+                                                    <div
+                                                        className={`h-1.5 w-1.5 rounded-full border ${sub.type === 'query' ? 'border-blue-500/50' : 'border-red-500/50'}`}
+                                                    ></div>
+                                                    <span
+                                                        className={`text-[10px] font-bold tracking-tighter uppercase ${sub.type === 'query' ? 'text-blue-500' : 'text-red-500'}`}
+                                                    >
+                                                        {sub.type}
                                                     </span>
-                                                    <span className="font-mono text-[10px]">
-                                                        {(
-                                                            (payload.bootstrap ||
-                                                                0) / 1000
-                                                        ).toFixed(2)}
-                                                        ms
+                                                    <span className="line-clamp-1 max-w-[400px] font-mono text-[10px] text-muted-foreground">
+                                                        {subLabel(sub)}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    className={`flex h-6 min-w-[80px] items-center justify-between rounded border px-3 ${sub.type === 'query' ? 'border-blue-500/20 bg-blue-500/10' : 'border-red-500/20 bg-red-500/10'}`}
+                                                >
+                                                    <span
+                                                        className={`text-[10px] font-bold uppercase ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
+                                                    >
+                                                        {sub.type}
+                                                    </span>
+                                                    <span
+                                                        className={`font-mono text-[10px] ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
+                                                    >
+                                                        {sub.type ===
+                                                        'query'
+                                                            ? (
+                                                                  (sub
+                                                                      .payload
+                                                                      .duration ||
+                                                                      0) /
+                                                                  1000
+                                                              ).toFixed(2) +
+                                                              'ms'
+                                                            : ''}
                                                     </span>
                                                 </div>
                                             </div>
+                                        ))}
 
-                                            {relatedRecords.map((sub, i) => (
-                                                <div
-                                                    key={i}
-                                                    className={`group flex items-center justify-between ${highlight_record_id === sub.id ? 'rounded ring-1 ring-blue-500 ring-offset-2 ring-offset-[#111111]' : ''}`}
-                                                >
-                                                    <div className="ml-4 flex items-center gap-2">
-                                                        <div
-                                                            className={`h-1.5 w-1.5 rounded-full border ${sub.type === 'query' ? 'border-blue-500/50' : 'border-red-500/50'}`}
-                                                        ></div>
-                                                        <span
-                                                            className={`text-[10px] font-bold tracking-tighter uppercase ${sub.type === 'query' ? 'text-blue-500' : 'text-red-500'}`}
-                                                        >
-                                                            {sub.type}
-                                                        </span>
-                                                        <span className="line-clamp-1 max-w-[400px] font-mono text-[10px] text-muted-foreground">
-                                                            {subLabel(sub)}
-                                                        </span>
-                                                    </div>
-                                                    <div
-                                                        className={`flex h-6 min-w-[80px] items-center justify-between rounded border px-3 ${sub.type === 'query' ? 'border-blue-500/20 bg-blue-500/10' : 'border-red-500/20 bg-red-500/10'}`}
-                                                    >
-                                                        <span
-                                                            className={`text-[10px] font-bold uppercase ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
-                                                        >
-                                                            {sub.type}
-                                                        </span>
-                                                        <span
-                                                            className={`font-mono text-[10px] ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
-                                                        >
-                                                            {sub.type ===
-                                                            'query'
-                                                                ? (
-                                                                      (sub
-                                                                          .payload
-                                                                          .duration ||
-                                                                          0) /
-                                                                      1000
-                                                                  ).toFixed(2) +
-                                                                  'ms'
-                                                                : ''}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ))}
-
-                                            <div className="group flex items-center justify-between">
-                                                <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
+                                        <div className="group flex items-center justify-between">
+                                            <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
+                                                Controller
+                                            </span>
+                                            <div className="flex h-6 w-[40%] items-center justify-between rounded border border-border bg-muted px-3">
+                                                <span className="text-[10px] font-bold uppercase">
                                                     Controller
                                                 </span>
-                                                <div className="flex h-6 w-[40%] items-center justify-between rounded border border-border bg-muted px-3">
-                                                    <span className="text-[10px] font-bold uppercase">
-                                                        Controller
-                                                    </span>
-                                                    <span className="font-mono text-[10px]">
-                                                        {(
-                                                            (payload.render ||
-                                                                0) / 1000
-                                                        ).toFixed(2)}
-                                                        ms
-                                                    </span>
-                                                </div>
+                                                <span className="font-mono text-[10px]">
+                                                    {(
+                                                        (payload.render ||
+                                                            0) / 1000
+                                                    ).toFixed(2)}
+                                                    ms
+                                                </span>
                                             </div>
-                                        </>
-                                    )}
-
-                                    {!isRequest && (
-                                        <div className="flex items-center justify-center p-8 text-xs text-muted-foreground italic">
-                                            Detailed timeline not available for
-                                            this record type.
                                         </div>
-                                    )}
-                                </div>
+                                    </>
+                                )}
+
+                                {!isRequest && (
+                                    <div className="flex items-center justify-center p-8 text-xs text-muted-foreground italic">
+                                        Detailed timeline not available for
+                                        this record type.
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </Card>
-                )}
+                    </div>
+                </Card>
             </div>
         </>
     );
