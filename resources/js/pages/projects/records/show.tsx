@@ -9,7 +9,7 @@ import {
     ChevronDown,
     ChevronRight,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { CodeBlock } from '@/components/code-block';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,18 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import AppLayout from '@/layouts/app-layout';
+
+// A label/value row, used by the mail details block
+const Row = ({ label, children }: { label: string; children: ReactNode }) => (
+    <div className="flex items-center justify-between gap-4 border-b border-border py-2">
+        <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+            {label}
+        </span>
+        <span className="text-right font-mono text-sm break-all text-foreground/90">
+            {children}
+        </span>
+    </div>
+);
 
 export default function RecordShow({
     record,
@@ -122,22 +134,35 @@ export default function RecordShow({
     const isJob = ['job-attempt', 'queued-job'].includes(record.type);
     const isCommand = ['command', 'scheduled-task'].includes(record.type);
     const isQuery = record.type === 'query';
+    const isMail = record.type === 'mail';
+
+    // Use the full URL if present; otherwise build it from the server name
+    // and append the route path only when the record has one
+    const requestUrl =
+        payload.url ||
+        (payload.server
+            ? `https://${payload.server}${payload.route_path ?? ''}`
+            : (payload.route_path ?? ''));
 
     const title = isJob
         ? payload.name || payload.job || 'Job Execution'
         : isCommand
           ? payload.command || 'Command Execution'
-          : isQuery
-            ? 'Database Query'
-            : payload.route_path || record.type.toUpperCase();
+          : isMail
+            ? payload.class || 'Mail'
+            : isQuery
+              ? 'Database Query'
+              : payload.route_path || record.type.toUpperCase();
 
     const subTitle = isRequest
-        ? payload.url || `https://${payload.server}${payload.route_path}`
+        ? requestUrl
         : isJob
           ? `${payload.connection || 'default'} @ ${payload.queue || 'default'}`
           : isCommand
             ? payload.arguments || 'No arguments'
-            : '';
+            : isMail
+              ? payload.subject || ''
+              : '';
 
     return (
         <>
@@ -168,13 +193,12 @@ export default function RecordShow({
                 {/* Main Info Card */}
                 <Card className="border-border bg-card p-8 shadow-2xl">
                     <div className="space-y-6">
-                        <div className="flex items-center gap-3 font-mono text-sm text-emerald-400">
-                            <Globe className="h-4 w-4" />
-                            <span className="break-all">
-                                {payload.url ||
-                                    `https://${payload.server}${payload.route_path}`}
-                            </span>
-                        </div>
+                        {requestUrl && (
+                            <div className="flex items-center gap-3 font-mono text-sm text-emerald-400">
+                                <Globe className="h-4 w-4" />
+                                <span className="break-all">{requestUrl}</span>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 gap-x-12 gap-y-4 md:grid-cols-2">
                             <div className="flex items-center justify-between border-b border-border py-2">
@@ -188,6 +212,45 @@ export default function RecordShow({
                                     UTC
                                 </span>
                             </div>
+
+                            {isMail && (
+                                <>
+                                    <Row label="Mailable">
+                                        {payload.class || '-'}
+                                    </Row>
+                                    <Row label="Subject">
+                                        {payload.subject || '-'}
+                                    </Row>
+                                    <Row label="Mailer">
+                                        {payload.mailer || '-'}
+                                    </Row>
+                                    <Row label="Sent via">
+                                        {payload.execution_source === 'job'
+                                            ? 'Queue (job)'
+                                            : payload.execution_source || '-'}
+                                    </Row>
+                                    <Row label="To / Cc / Bcc">
+                                        {`${payload.to ?? 0} / ${payload.cc ?? 0} / ${payload.bcc ?? 0}`}
+                                    </Row>
+                                    <Row label="Attachments">
+                                        {payload.attachments ?? 0}
+                                    </Row>
+                                    <Row label="Duration">
+                                        {`${((payload.duration || 0) / 1000).toFixed(2)} ms`}
+                                    </Row>
+                                    <Row label="Failed">
+                                        {payload.failed ? 'Yes' : 'No'}
+                                    </Row>
+                                    <Row label="Execution">
+                                        {payload.execution_preview ||
+                                            payload.execution_id ||
+                                            '-'}
+                                    </Row>
+                                    <Row label="Trace ID">
+                                        {payload.trace_id || '-'}
+                                    </Row>
+                                </>
+                            )}
 
                             {isRequest && (
                                 <>
@@ -271,19 +334,21 @@ export default function RecordShow({
                                 </span>
                             </div>
 
-                            <div className="flex items-center justify-between py-2">
-                                <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                                    Peak Memory
-                                </span>
-                                <span className="font-mono text-sm text-foreground/90">
-                                    {(
-                                        (payload.peak_memory_usage || 0) /
-                                        1024 /
-                                        1024
-                                    ).toFixed(2)}{' '}
-                                    MB
-                                </span>
-                            </div>
+                            {!isMail && (
+                                <div className="flex items-center justify-between py-2">
+                                    <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                                        Peak Memory
+                                    </span>
+                                    <span className="font-mono text-sm text-foreground/90">
+                                        {(
+                                            (payload.peak_memory_usage || 0) /
+                                            1024 /
+                                            1024
+                                        ).toFixed(2)}{' '}
+                                        MB
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-6">
@@ -300,107 +365,113 @@ export default function RecordShow({
                             </div>
                         </div>
 
-                        <div className="pt-6">
-                            <div className="mb-4 flex items-center justify-between">
-                                <h3 className="text-xs font-bold text-foreground uppercase">
-                                    Events
-                                </h3>
-                                <div className="flex gap-4 rounded bg-muted px-2 py-1 text-[9px] font-bold uppercase">
-                                    <span>
-                                        Events{' '}
-                                        <span className="ml-1 text-foreground">
-                                            {totalEvents}
+                        {!isMail && (
+                            <div className="pt-6">
+                                <div className="mb-4 flex items-center justify-between">
+                                    <h3 className="text-xs font-bold text-foreground uppercase">
+                                        Events
+                                    </h3>
+                                    <div className="flex gap-4 rounded bg-muted px-2 py-1 text-[9px] font-bold uppercase">
+                                        <span>
+                                            Events{' '}
+                                            <span className="ml-1 text-foreground">
+                                                {totalEvents}
+                                            </span>
                                         </span>
-                                    </span>
-                                    <span>
-                                        Duration{' '}
-                                        <span className="ml-1 text-foreground">
-                                            {(
-                                                (payload.duration || 0) / 1000
-                                            ).toFixed(2)}
-                                            ms
+                                        <span>
+                                            Duration{' '}
+                                            <span className="ml-1 text-foreground">
+                                                {(
+                                                    (payload.duration || 0) /
+                                                    1000
+                                                ).toFixed(2)}
+                                                ms
+                                            </span>
                                         </span>
-                                    </span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-x-12 md:grid-cols-2">
+                                    {events.map((event, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-center justify-between border-b border-border py-2"
+                                        >
+                                            <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                                                {event.label}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-sm text-foreground/90">
+                                                    {event.count} Events
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-x-12 md:grid-cols-2">
-                                {events.map((event, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center justify-between border-b border-border py-2"
-                                    >
-                                        <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                                            {event.label}
-                                        </span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono text-sm text-foreground/90">
-                                                {event.count} Events
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </Card>
 
-                {/* Headers Card */}
-                <Card className="border-border bg-card shadow-2xl">
-                    <Collapsible
-                        open={expandedHeaders}
-                        onOpenChange={setExpandedHeaders}
-                    >
-                        <CollapsibleTrigger asChild>
-                            <div className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-muted/30">
-                                <h3 className="text-xs font-bold text-foreground uppercase">
-                                    Headers
-                                </h3>
-                                <div className="flex h-5 w-5 items-center justify-center rounded bg-muted">
-                                    {expandedHeaders ? (
-                                        <ChevronDown className="h-3 w-3" />
-                                    ) : (
-                                        <ChevronRight className="h-3 w-3" />
-                                    )}
+                {/* Headers Card (not collected for mail records) */}
+                {!isMail && (
+                    <Card className="border-border bg-card shadow-2xl">
+                        <Collapsible
+                            open={expandedHeaders}
+                            onOpenChange={setExpandedHeaders}
+                        >
+                            <CollapsibleTrigger asChild>
+                                <div className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-muted/30">
+                                    <h3 className="text-xs font-bold text-foreground uppercase">
+                                        Headers
+                                    </h3>
+                                    <div className="flex h-5 w-5 items-center justify-center rounded bg-muted">
+                                        {expandedHeaders ? (
+                                            <ChevronDown className="h-3 w-3" />
+                                        ) : (
+                                            <ChevronRight className="h-3 w-3" />
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                            <div className="border-t border-border p-6 text-xs">
-                                {(() => {
-                                    let headersObj = payload.headers || {};
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <div className="border-t border-border p-6 text-xs">
+                                    {(() => {
+                                        let headersObj = payload.headers || {};
 
-                                    if (typeof headersObj === 'string') {
-                                        try {
-                                            headersObj = JSON.parse(headersObj);
-                                        } catch {
-                                            // ignore
+                                        if (typeof headersObj === 'string') {
+                                            try {
+                                                headersObj =
+                                                    JSON.parse(headersObj);
+                                            } catch {
+                                                // ignore
+                                            }
                                         }
-                                    }
 
-                                    return (
-                                        <CodeBlock
-                                            language="json"
-                                            style={vscDarkPlus}
-                                            customStyle={{
-                                                margin: 0,
-                                                borderRadius: '0.5rem',
-                                                border: '1px solid hsl(var(--border))',
-                                            }}
-                                            wrapLines={true}
-                                            wrapLongLines={true}
-                                        >
-                                            {JSON.stringify(
-                                                headersObj,
-                                                null,
-                                                4,
-                                            )}
-                                        </CodeBlock>
-                                    );
-                                })()}
-                            </div>
-                        </CollapsibleContent>
-                    </Collapsible>
-                </Card>
+                                        return (
+                                            <CodeBlock
+                                                language="json"
+                                                style={vscDarkPlus}
+                                                customStyle={{
+                                                    margin: 0,
+                                                    borderRadius: '0.5rem',
+                                                    border: '1px solid hsl(var(--border))',
+                                                }}
+                                                wrapLines={true}
+                                                wrapLongLines={true}
+                                            >
+                                                {JSON.stringify(
+                                                    headersObj,
+                                                    null,
+                                                    4,
+                                                )}
+                                            </CodeBlock>
+                                        );
+                                    })()}
+                                </div>
+                            </CollapsibleContent>
+                        </Collapsible>
+                    </Card>
+                )}
 
                 {/* Request Payload Card */}
                 {(() => {
@@ -469,144 +540,152 @@ export default function RecordShow({
                     );
                 })()}
 
-                {/* Timeline Card */}
-                <Card className="border-border bg-card p-8 shadow-2xl">
-                    <div className="mb-8 flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-foreground uppercase">
-                            Timeline
-                        </h3>
-                        <div className="flex gap-12 text-[10px] font-bold text-muted-foreground uppercase">
-                            <span>0ms</span>
-                            <span>
-                                {((payload.duration || 0) / 1000).toFixed(0)}ms
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="relative border-l border-border pl-4">
-                            <div className="mb-2 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                                    <span className="text-[10px] font-bold tracking-widest uppercase">
-                                        Request {payload.route_path}
-                                    </span>
-                                </div>
-                                <div className="flex h-5 items-center gap-2 rounded border border-emerald-500/30 bg-emerald-500/20 px-2">
-                                    <span className="text-[9px] font-bold text-emerald-400 uppercase">
-                                        {record.type.toUpperCase()}
-                                    </span>
-                                    {isRequest && (
-                                        <Badge className="h-3 rounded-sm border-none bg-emerald-500 px-1 text-[9px]">
-                                            {payload.status_code}
-                                        </Badge>
+                {/* Timeline Card (request-oriented, hidden for mail records) */}
+                {!isMail && (
+                    <Card className="border-border bg-card p-8 shadow-2xl">
+                        <div className="mb-8 flex items-center justify-between">
+                            <h3 className="text-xs font-bold text-foreground uppercase">
+                                Timeline
+                            </h3>
+                            <div className="flex gap-12 text-[10px] font-bold text-muted-foreground uppercase">
+                                <span>0ms</span>
+                                <span>
+                                    {((payload.duration || 0) / 1000).toFixed(
+                                        0,
                                     )}
-                                    <span className="font-mono text-[10px] text-foreground">
-                                        {(
-                                            (payload.duration || 0) / 1000
-                                        ).toFixed(2)}
-                                        ms
-                                    </span>
-                                    <span className="font-mono text-[10px] text-muted-foreground">
-                                        {title}
-                                    </span>
-                                </div>
+                                    ms
+                                </span>
                             </div>
+                        </div>
 
-                            {/* Sub-items (Dynamic from relatedRecords) */}
-                            <div className="mt-4 ml-4 space-y-3">
-                                {isRequest && (
-                                    <>
-                                        <div className="group flex items-center justify-between">
-                                            <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
-                                                Bootstrap
-                                            </span>
-                                            <div className="flex h-6 w-[70%] items-center justify-between rounded border border-border bg-muted px-3">
-                                                <span className="text-[10px] font-bold uppercase">
+                        <div className="space-y-4">
+                            <div className="relative border-l border-border pl-4">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                        <span className="text-[10px] font-bold tracking-widest uppercase">
+                                            Request {payload.route_path}
+                                        </span>
+                                    </div>
+                                    <div className="flex h-5 items-center gap-2 rounded border border-emerald-500/30 bg-emerald-500/20 px-2">
+                                        <span className="text-[9px] font-bold text-emerald-400 uppercase">
+                                            {record.type.toUpperCase()}
+                                        </span>
+                                        {isRequest && (
+                                            <Badge className="h-3 rounded-sm border-none bg-emerald-500 px-1 text-[9px]">
+                                                {payload.status_code}
+                                            </Badge>
+                                        )}
+                                        <span className="font-mono text-[10px] text-foreground">
+                                            {(
+                                                (payload.duration || 0) / 1000
+                                            ).toFixed(2)}
+                                            ms
+                                        </span>
+                                        <span className="font-mono text-[10px] text-muted-foreground">
+                                            {title}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Sub-items (Dynamic from relatedRecords) */}
+                                <div className="mt-4 ml-4 space-y-3">
+                                    {isRequest && (
+                                        <>
+                                            <div className="group flex items-center justify-between">
+                                                <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
                                                     Bootstrap
                                                 </span>
-                                                <span className="font-mono text-[10px]">
-                                                    {(
-                                                        (payload.bootstrap ||
-                                                            0) / 1000
-                                                    ).toFixed(2)}
-                                                    ms
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {relatedRecords.map((sub, i) => (
-                                            <div
-                                                key={i}
-                                                className={`group flex items-center justify-between ${highlight_record_id === sub.id ? 'rounded ring-1 ring-blue-500 ring-offset-2 ring-offset-[#111111]' : ''}`}
-                                            >
-                                                <div className="ml-4 flex items-center gap-2">
-                                                    <div
-                                                        className={`h-1.5 w-1.5 rounded-full border ${sub.type === 'query' ? 'border-blue-500/50' : 'border-red-500/50'}`}
-                                                    ></div>
-                                                    <span
-                                                        className={`text-[10px] font-bold tracking-tighter uppercase ${sub.type === 'query' ? 'text-blue-500' : 'text-red-500'}`}
-                                                    >
-                                                        {sub.type}
+                                                <div className="flex h-6 w-[70%] items-center justify-between rounded border border-border bg-muted px-3">
+                                                    <span className="text-[10px] font-bold uppercase">
+                                                        Bootstrap
                                                     </span>
-                                                    <span className="line-clamp-1 max-w-[400px] font-mono text-[10px] text-muted-foreground">
-                                                        {subLabel(sub)}
+                                                    <span className="font-mono text-[10px]">
+                                                        {(
+                                                            (payload.bootstrap ||
+                                                                0) / 1000
+                                                        ).toFixed(2)}
+                                                        ms
                                                     </span>
                                                 </div>
+                                            </div>
+
+                                            {relatedRecords.map((sub, i) => (
                                                 <div
-                                                    className={`flex h-6 min-w-[80px] items-center justify-between rounded border px-3 ${sub.type === 'query' ? 'border-blue-500/20 bg-blue-500/10' : 'border-red-500/20 bg-red-500/10'}`}
+                                                    key={i}
+                                                    className={`group flex items-center justify-between ${highlight_record_id === sub.id ? 'rounded ring-1 ring-blue-500 ring-offset-2 ring-offset-[#111111]' : ''}`}
                                                 >
-                                                    <span
-                                                        className={`text-[10px] font-bold uppercase ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
+                                                    <div className="ml-4 flex items-center gap-2">
+                                                        <div
+                                                            className={`h-1.5 w-1.5 rounded-full border ${sub.type === 'query' ? 'border-blue-500/50' : 'border-red-500/50'}`}
+                                                        ></div>
+                                                        <span
+                                                            className={`text-[10px] font-bold tracking-tighter uppercase ${sub.type === 'query' ? 'text-blue-500' : 'text-red-500'}`}
+                                                        >
+                                                            {sub.type}
+                                                        </span>
+                                                        <span className="line-clamp-1 max-w-[400px] font-mono text-[10px] text-muted-foreground">
+                                                            {subLabel(sub)}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        className={`flex h-6 min-w-[80px] items-center justify-between rounded border px-3 ${sub.type === 'query' ? 'border-blue-500/20 bg-blue-500/10' : 'border-red-500/20 bg-red-500/10'}`}
                                                     >
-                                                        {sub.type}
-                                                    </span>
-                                                    <span
-                                                        className={`font-mono text-[10px] ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
-                                                    >
-                                                        {sub.type === 'query'
-                                                            ? (
-                                                                  (sub.payload
-                                                                      .duration ||
-                                                                      0) / 1000
-                                                              ).toFixed(2) +
-                                                              'ms'
-                                                            : ''}
-                                                    </span>
+                                                        <span
+                                                            className={`text-[10px] font-bold uppercase ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
+                                                        >
+                                                            {sub.type}
+                                                        </span>
+                                                        <span
+                                                            className={`font-mono text-[10px] ${sub.type === 'query' ? 'text-blue-400' : 'text-red-400'}`}
+                                                        >
+                                                            {sub.type ===
+                                                            'query'
+                                                                ? (
+                                                                      (sub
+                                                                          .payload
+                                                                          .duration ||
+                                                                          0) /
+                                                                      1000
+                                                                  ).toFixed(2) +
+                                                                  'ms'
+                                                                : ''}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
 
-                                        <div className="group flex items-center justify-between">
-                                            <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
-                                                Controller
-                                            </span>
-                                            <div className="flex h-6 w-[40%] items-center justify-between rounded border border-border bg-muted px-3">
-                                                <span className="text-[10px] font-bold uppercase">
+                                            <div className="group flex items-center justify-between">
+                                                <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
                                                     Controller
                                                 </span>
-                                                <span className="font-mono text-[10px]">
-                                                    {(
-                                                        (payload.render || 0) /
-                                                        1000
-                                                    ).toFixed(2)}
-                                                    ms
-                                                </span>
+                                                <div className="flex h-6 w-[40%] items-center justify-between rounded border border-border bg-muted px-3">
+                                                    <span className="text-[10px] font-bold uppercase">
+                                                        Controller
+                                                    </span>
+                                                    <span className="font-mono text-[10px]">
+                                                        {(
+                                                            (payload.render ||
+                                                                0) / 1000
+                                                        ).toFixed(2)}
+                                                        ms
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </>
-                                )}
+                                        </>
+                                    )}
 
-                                {!isRequest && (
-                                    <div className="flex items-center justify-center p-8 text-xs text-muted-foreground italic">
-                                        Detailed timeline not available for this
-                                        record type.
-                                    </div>
-                                )}
+                                    {!isRequest && (
+                                        <div className="flex items-center justify-center p-8 text-xs text-muted-foreground italic">
+                                            Detailed timeline not available for
+                                            this record type.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </Card>
+                    </Card>
+                )}
             </div>
         </>
     );
