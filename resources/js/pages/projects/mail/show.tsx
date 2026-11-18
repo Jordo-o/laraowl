@@ -85,49 +85,59 @@ export default function MailShow({
                         <TableHeader className="bg-muted/30">
                             <TableRow className="border-border text-[10px] font-bold text-muted-foreground uppercase hover:bg-transparent">
                                 <TableHead>Sent At</TableHead>
+                                <TableHead>Record</TableHead>
                                 <TableHead>Type</TableHead>
-                                <TableHead>Recipients</TableHead>
+                                <TableHead>Subject</TableHead>
+                                <TableHead>To / Cc / Bcc</TableHead>
+                                <TableHead>Attach.</TableHead>
+                                <TableHead>Duration</TableHead>
                                 <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {records.data.map((record: any) => (
-                                <TableRow
-                                    key={record.id}
-                                    className="group border-border transition-colors hover:bg-muted/30"
-                                >
-                                    <TableCell className="font-mono text-xs text-muted-foreground">
-                                        {new Date(
-                                            record.created_at,
-                                        ).toLocaleString()}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            className={`text-[10px] font-bold uppercase ${record.payload.queued === 'true' || record.payload.queued === true ? 'bg-blue-500/10 text-blue-400' : 'bg-muted text-foreground/50'} border-none`}
-                                        >
-                                            {record.payload.queued === 'true' ||
-                                            record.payload.queued === true
-                                                ? 'QUEUED'
-                                                : 'DIRECT'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="max-w-xs truncate font-mono text-xs text-foreground/70">
-                                        {formatValue(
-                                            record.payload.to ||
-                                                record.payload.recipient ||
-                                                record.payload.email ||
-                                                'Unknown',
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Link href={recordHref(record.id)}>
-                                            <div className="rounded border border-border bg-muted p-1 transition-all group-hover:border-border">
-                                                <ArrowUpRight className="h-3 w-3" />
-                                            </div>
-                                        </Link>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {records.data.map((record: any) => {
+                                const p = record.payload ?? {};
+                                const isMail = record.type === 'mail';
+                                // The client does not send "queued"; execution_source "job" means a queued mailable
+                                const queued =
+                                    p.queued === true || p.queued === 'true' || p.execution_source === 'job';
+                            
+                                return (
+                                    <TableRow key={record.id} className="group border-border transition-colors hover:bg-muted/30">
+                                        <TableCell className="font-mono text-xs text-muted-foreground">
+                                            {new Date(record.created_at).toLocaleString()}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-[10px] text-foreground/50 uppercase">
+                                            {record.type}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className={`text-[10px] font-bold uppercase ${queued ? 'bg-blue-500/10 text-blue-400' : 'bg-muted text-foreground/50'} border-none`}>
+                                                {queued ? 'QUEUED' : 'DIRECT'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="max-w-xs truncate text-xs text-foreground/70">
+                                            {isMail ? (p.subject ?? '-') : '-'}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs text-foreground/70">
+                                            {isMail ? `${p.to ?? 0} / ${p.cc ?? 0} / ${p.bcc ?? 0}` : '-'}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs text-foreground/70">
+                                            {isMail ? (p.attachments ?? 0) : '-'}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs text-foreground/70">
+                                            {/* duration arrives in microseconds */}
+                                            {p.duration ? `${Math.round(p.duration / 1000)} ms` : '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Link href={recordHref(record.id)}>
+                                                <div className="rounded border border-border bg-muted p-1 transition-all group-hover:border-border">
+                                                    <ArrowUpRight className="h-3 w-3" />
+                                                </div>
+                                            </Link>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                     <Pagination links={records.links} meta={records} />
