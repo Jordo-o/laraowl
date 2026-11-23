@@ -2,6 +2,8 @@
 
 use App\Models\Project;
 use App\Models\User;
+use App\Services\AlertService;
+use App\Services\IngestService;
 use App\Services\RecordService;
 use Inertia\Testing\AssertableInertia;
 
@@ -90,3 +92,37 @@ test('legacy fingerprints resolve only to an unambiguous issue in their project'
         ->and($issues->has('ambiguous-legacy'))->toBeFalse()
         ->and($issues->has('foreign'))->toBeFalse();
 });
+
+test('exception recurrence reopens only resolved issues', function (string $status, string $expected) {
+    $project = Project::factory()->create();
+    $issue = $project->issues()->create([
+        'hash' => 'recurring-exception',
+        'type' => 'exception',
+        'title' => 'RuntimeException',
+        'message' => 'Example exception',
+        'status' => $status,
+        'first_seen_at' => now()->subHour(),
+        'last_seen_at' => now()->subHour(),
+        'occurrences_count' => 1,
+    ]);
+    $issue->forceFill(['resolved_at' => $status === 'resolved' ? now() : null])->save();
+
+    $this->mock(AlertService::class)->shouldIgnoreMissing();
+
+    app(IngestService::class)->ingest($project, [[
+        't' => 'exception',
+        '_group' => $issue->hash,
+        'class' => $issue->title,
+        'message' => $issue->message,
+    ]]);
+
+    expect($issue->refresh()->status)->toBe($expected)
+        ->and($issue->resolved_at)->toBeNull()
+        ->and((int) $issue->occurrences_count)->toBe(2)
+        ->and($issue->records()->count())->toBe(1)
+        ->and($project->issues()->count())->toBe(1);
+})->with([
+    'resolved' => ['resolved', 'open'],
+    'ignored' => ['ignored', 'ignored'],
+    'open' => ['open', 'open'],
+]);

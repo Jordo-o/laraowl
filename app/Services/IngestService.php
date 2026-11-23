@@ -224,8 +224,17 @@ class IngestService
             ]
         );
 
-        $issue->increment('occurrences_count');
-        $issue->update(['last_seen_at' => now()]);
+        $issue->increment('occurrences_count', 1, ['last_seen_at' => now()]);
+
+        // The increment locks the issue row until this ingest transaction commits.
+        $reopened = $issue->newQuery()
+            ->whereKey($issue->id)
+            ->where('status', 'resolved')
+            ->update(['status' => 'open', 'resolved_at' => null]);
+
+        if ($reopened) {
+            $issue->refresh();
+        }
 
         $record->update(['issue_id' => $issue->id]);
 
