@@ -158,7 +158,9 @@ class RecordController extends Controller
 
     public function showExceptionDetails(Request $request, Team $current_team, Project $project, string $hash): Response
     {
-        return $this->renderHistory($project, $hash, 'projects/exceptions/show');
+        return $this->renderHistory($project, $hash, 'projects/exceptions/show', [
+            'issue' => fn () => $this->recordService->getExceptionIssues($project, [$hash])->get($hash)?->only(['id', 'status']),
+        ]);
     }
 
     public function showQueryDetails(Request $request, Team $current_team, Project $project, string $hash): Response
@@ -212,7 +214,7 @@ class RecordController extends Controller
     /**
      * Helpers
      */
-    protected function renderHistory(Project $project, string $hash, string $component): Response
+    protected function renderHistory(Project $project, string $hash, string $component, array $props = []): Response
     {
         $period = request()->query('period', '1h');
         $from = request()->query('from');
@@ -235,6 +237,7 @@ class RecordController extends Controller
             'period' => $period,
             'from' => $from,
             'to' => $to,
+            ...$props,
         ]);
     }
 

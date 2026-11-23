@@ -2,8 +2,8 @@
 import { AlertCircle, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { EmptyState } from '@/components/empty-state';
+import { IssueStatusBadge } from '@/components/issue-status-badge';
 import { Pagination } from '@/components/pagination';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
@@ -172,9 +172,9 @@ export default function ExceptionsIndex({
                                                     >
                                                         <div className="flex cursor-pointer flex-col gap-1">
                                                             <div className="flex items-center gap-2">
-                                                                <Badge className="rounded-sm border-red-500/20 bg-red-500/10 px-1.5 py-0 text-[10px] font-bold text-red-500 uppercase">
-                                                                    UNHANDLED
-                                                                </Badge>
+                                                                <IssueStatusBadge
+                                                                    status={exc.issue_status}
+                                                                />
                                                                 <span className="font-mono text-xs font-bold text-foreground transition-colors group-hover:text-foreground">
                                                                     {exc.class}
                                                                 </span>

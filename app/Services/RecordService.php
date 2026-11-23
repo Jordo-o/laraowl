@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Issue;
 use App\Models\Project;
 use App\Models\Record;
 use App\Models\RecordGroupRollup;
@@ -236,19 +237,22 @@ class RecordService
         $uniqueTypes = $this->distinctGroups($project, 'exception', $period, $from, $to);
 
         $exceptions = $this->groupList($project, 'exception', $period, $from, $to, sort: 'last_seen');
+        $hashes = collect($exceptions->items())->pluck('hash')->all();
+        $issues = $this->getExceptionIssues($project, $hashes);
 
         $userCounts = RecordGroupUserBucket::query()
             ->where('project_id', $project->id)
             ->where('type', 'exception')
-            ->whereIn('group_key', collect($exceptions->items())->pluck('hash')->all())
+            ->whereIn('group_key', $hashes)
             ->forPeriod($period, $from, $to)
             ->select('group_key', DB::raw('COUNT(DISTINCT '.$this->col('user_key').') as users'))
             ->groupBy('group_key')
             ->pluck('users', 'group_key');
 
-        $exceptions->through(function ($row) use ($userCounts) {
+        $exceptions->through(function ($row) use ($issues, $userCounts) {
             $row->class = $row->label;
             $row->message = $row->sublabel;
+            $row->issue_status = $issues->get($row->hash)?->status;
             $row->total_count = (int) $row->total;
             $row->user_count = (int) ($userCounts[$row->hash] ?? 0);
 
@@ -263,6 +267,56 @@ class RecordService
                 'unique' => $uniqueTypes,
             ],
         ];
+    }
+
+    /**
+     * @param  list<string>  $hashes
+     * @return Collection<string, Issue>
+     */
+    public function getExceptionIssues(Project $project, array $hashes): Collection
+    {
+        if ($hashes === []) {
+            return collect();
+        }
+
+        $issues = $project->issues()
+            ->whereIn('hash', $hashes)
+            ->get(['id', 'hash', 'status'])
+            ->keyBy('hash');
+
+        $missing = array_diff($hashes, $issues->keys()->all());
+
+        if ($missing === []) {
+            return $issues;
+        }
+
+        // Older clients can group several locations under one fingerprint. Only
+        // offer an issue status when all retained links identify the same issue.
+        $legacyLinks = $project->records()
+            ->ofType('exception')
+            ->whereIn('fingerprint', $missing)
+            ->whereNotNull('issue_id')
+            ->groupBy('fingerprint')
+            ->havingRaw('COUNT(DISTINCT issue_id) = 1')
+            ->selectRaw('fingerprint, MIN(issue_id) AS issue_id')
+            ->pluck('issue_id', 'fingerprint');
+
+        if ($legacyLinks->isEmpty()) {
+            return $issues;
+        }
+
+        $legacyIssues = $project->issues()
+            ->whereKey($legacyLinks->values()->all())
+            ->get(['id', 'status'])
+            ->keyBy('id');
+
+        foreach ($legacyLinks as $hash => $id) {
+            if ($issue = $legacyIssues->get($id)) {
+                $issues->put($hash, $issue);
+            }
+        }
+
+        return $issues;
     }
 
     /**
