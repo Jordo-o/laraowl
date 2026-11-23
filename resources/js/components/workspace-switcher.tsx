@@ -8,8 +8,10 @@ import {
     Search,
     Settings2,
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import CreateProjectModal from '@/components/create-project-modal';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -20,16 +22,36 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export function WorkspaceSwitcher({
-    inHeader = false,
+function ProjectIcon({
+    logoUrl,
+    children,
 }: {
-    inHeader?: boolean;
+    logoUrl?: string | null;
+    children: ReactNode;
 }) {
+    return (
+        <Avatar className="size-full overflow-hidden rounded-[inherit] after:hidden">
+            <AvatarImage
+                src={logoUrl ?? undefined}
+                alt=""
+                className="rounded-[inherit] object-contain"
+            />
+            <AvatarFallback className="rounded-[inherit] bg-transparent text-inherit">
+                {children}
+            </AvatarFallback>
+        </Avatar>
+    );
+}
+
+export function WorkspaceSwitcher({ inHeader = false }: { inHeader?: boolean }) {
     const { props }: any = usePage();
     const isMobile = useIsMobile();
     const currentTeam = props.currentTeam;
     const projects = props.projects ?? [];
     const currentProject = props.currentProject;
+    const currentLogoUrl = projects.find(
+        (project: { id: number }) => project.id === currentProject?.id,
+    )?.uploaded_logo_url;
 
     const [search, setSearch] = useState('');
 
@@ -78,7 +100,9 @@ export function WorkspaceSwitcher({
                                 : 'mr-3 flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-foreground group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:size-6'
                         }
                     >
-                        <Terminal className={inHeader ? 'size-3' : 'size-4'} />
+                        <ProjectIcon logoUrl={currentLogoUrl}>
+                            <Terminal className={inHeader ? 'size-3' : 'size-4'} />
+                        </ProjectIcon>
                     </div>
                     <div
                         className={
@@ -188,7 +212,11 @@ export function WorkspaceSwitcher({
                                                             ][index % 5]
                                                         } flex items-center justify-center text-foreground shadow-lg`}
                                                     >
-                                                        <Layout className="size-5" />
+                                                        <ProjectIcon
+                                                            logoUrl={project.uploaded_logo_url}
+                                                        >
+                                                            <Layout className="size-5" />
+                                                        </ProjectIcon>
                                                     </div>
                                                     <span
                                                         title={project.name}

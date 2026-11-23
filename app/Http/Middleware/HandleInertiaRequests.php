@@ -72,7 +72,9 @@ class HandleInertiaRequests extends Middleware
                 $teamIds = $user->teams()->pluck('teams.id');
 
                 return Project::whereIn('team_id', $teamIds)
-                    ->get(['id', 'team_id', 'name', 'slug']) ?? [];
+                    ->with(['media' => fn ($query) => $query->where('collection_name', 'logo')])
+                    ->get(['id', 'team_id', 'name', 'slug'])
+                    ->each(fn (Project $project) => $project->append('uploaded_logo_url')->makeHidden('media'));
             },
             'currentProject' => function () use ($request, $user) {
                 $teamParam = $request->route('current_team');
