@@ -22,11 +22,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+const projectIconGradients = [
+    'from-indigo-500 to-purple-600',
+    'from-blue-500 to-cyan-400',
+    'from-emerald-500 to-teal-400',
+    'from-orange-500 to-amber-400',
+    'from-rose-500 to-pink-400',
+];
+
 function ProjectIcon({
     logoUrl,
+    fallbackClassName,
     children,
 }: {
     logoUrl?: string | null;
+    fallbackClassName: string;
     children: ReactNode;
 }) {
     return (
@@ -36,7 +46,9 @@ function ProjectIcon({
                 alt=""
                 className="rounded-[inherit] object-contain"
             />
-            <AvatarFallback className="rounded-[inherit] bg-transparent text-inherit">
+            <AvatarFallback
+                className={`rounded-[inherit] text-inherit ${fallbackClassName}`}
+            >
                 {children}
             </AvatarFallback>
         </Avatar>
@@ -96,11 +108,16 @@ export function WorkspaceSwitcher({ inHeader = false }: { inHeader?: boolean }) 
                     <div
                         className={
                             inHeader
-                                ? 'flex aspect-square size-5 shrink-0 items-center justify-center rounded bg-blue-600/20 text-blue-400'
-                                : 'mr-3 flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-foreground group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:size-6'
+                                ? 'flex aspect-square size-5 shrink-0 items-center justify-center rounded text-blue-400'
+                                : 'mr-3 flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg border border-border text-foreground group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:size-6'
                         }
                     >
-                        <ProjectIcon logoUrl={currentLogoUrl}>
+                        <ProjectIcon
+                            logoUrl={currentLogoUrl}
+                            fallbackClassName={
+                                inHeader ? 'bg-blue-600/20' : 'bg-muted'
+                            }
+                        >
                             <Terminal className={inHeader ? 'size-3' : 'size-4'} />
                         </ProjectIcon>
                     </div>
@@ -201,19 +218,15 @@ export function WorkspaceSwitcher({ inHeader = false }: { inHeader?: boolean }) 
                                                 className="group mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
                                             >
                                                 <div className="flex min-w-0 items-center gap-3">
-                                                    <div
-                                                        className={`size-9 shrink-0 rounded-lg bg-gradient-to-br ${
-                                                            [
-                                                                'from-indigo-500 to-purple-600',
-                                                                'from-blue-500 to-cyan-400',
-                                                                'from-emerald-500 to-teal-400',
-                                                                'from-orange-500 to-amber-400',
-                                                                'from-rose-500 to-pink-400',
-                                                            ][index % 5]
-                                                        } flex items-center justify-center text-foreground shadow-lg`}
-                                                    >
+                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg text-foreground shadow-lg">
                                                         <ProjectIcon
                                                             logoUrl={project.uploaded_logo_url}
+                                                            fallbackClassName={`bg-transparent bg-gradient-to-br ${
+                                                                projectIconGradients[
+                                                                    index %
+                                                                        projectIconGradients.length
+                                                                ]
+                                                            }`}
                                                         >
                                                             <Layout className="size-5" />
                                                         </ProjectIcon>
