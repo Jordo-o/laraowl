@@ -64,11 +64,13 @@ class Project extends Model implements HasMedia
 
     public function getLogoUrlAttribute()
     {
-        $media = $this->getFirstMedia('logo');
+        return $this->getUploadedLogoUrlAttribute()
+            ?? 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF';
+    }
 
-        return $media
-            ? $media->getUrl()
-            : 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF';
+    public function getUploadedLogoUrlAttribute(): ?string
+    {
+        return $this->getFirstMedia('logo')?->getUrl();
     }
 
     protected $casts = [
