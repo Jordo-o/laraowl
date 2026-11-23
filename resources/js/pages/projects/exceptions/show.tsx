@@ -1,8 +1,11 @@
-﻿import { Head, Link, usePage } from '@inertiajs/react';
+﻿import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { IssueStatusBadge } from '@/components/issue-status-badge';
+import type { IssueStatus } from '@/components/issue-status-badge';
 import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
     Table,
@@ -20,10 +23,12 @@ export default function ExceptionDetails({
     hash,
     meta,
     records,
+    issue,
 }: {
     hash: string;
     meta: any;
     records: any;
+    issue?: { id: number; status: IssueStatus } | null;
 }) {
     const { props }: any = usePage();
     const teamSlug = props.current_team?.slug || props.currentTeam?.slug;
@@ -34,6 +39,7 @@ export default function ExceptionDetails({
     const stack = payload.stack || [];
     const firstFrame = stack[0] || {};
     const [expandedFrames, setExpandedFrames] = useState<number[]>([]);
+    const { patch, processing, errors } = useForm({ status: 'resolved' });
     const recordHref = (record: number) =>
         showRecord.url(
             {
@@ -98,15 +104,38 @@ export default function ExceptionDetails({
                     </Card>
 
                     <Card className="relative flex flex-col items-center justify-center overflow-hidden border-border bg-card p-6 shadow-2xl">
-                        <Badge className="mb-4 rounded-sm border-none bg-red-500 px-1.5 py-0 text-[10px] font-bold text-foreground uppercase">
-                            UNHANDLED
-                        </Badge>
+                        <IssueStatusBadge
+                            status={issue?.status}
+                            className="mb-4"
+                        />
                         <div className="text-3xl font-bold text-foreground">
                             {formatCompactNumber(records.total)}
                         </div>
                         <div className="mt-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
                             Total Hits
                         </div>
+                        {issue && issue.status !== 'resolved' && (
+                            <Button
+                                className="mt-4"
+                                disabled={processing}
+                                onClick={() =>
+                                    patch(
+                                        `/${teamSlug}/${projectSlug}/issues/${issue.id}`,
+                                        { preserveScroll: true },
+                                    )
+                                }
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                            >
+                                Mark as resolved
+                            </Button>
+                        )}
+                        {errors.status && (
+                            <p className="mt-2 text-sm text-destructive" role="alert">
+                                {errors.status}
+                            </p>
+                        )}
                     </Card>
                 </div>
 

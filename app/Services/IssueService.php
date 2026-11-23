@@ -80,14 +80,17 @@ class IssueService
         $oldStatus = $issue->status;
         $oldPriority = $issue->priority;
 
-        $issue->update($data);
+        $issue->fill($data);
+
+        if (($data['status'] ?? null) === 'resolved' && ! $issue->resolved_at) {
+            $issue->resolved_at = now();
+        }
+
+        $issue->save();
 
         // Track Status Change
         if (isset($data['status']) && $oldStatus !== $data['status']) {
             $this->logActivity($issue, 'status_change', "changed status from {$oldStatus} to {$data['status']}");
-            if ($data['status'] === 'resolved' && ! $issue->resolved_at) {
-                $issue->update(['resolved_at' => now()]);
-            }
         }
 
         // Track Assignee Change
