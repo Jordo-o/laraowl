@@ -63,37 +63,37 @@ class ProjectController extends Controller
 
     public function updateCloudflare(Request $request, Team $current_team, Project $project)
     {
-        $request->validate([
-            'api_token' => ['required', 'string'],
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'api_token' => ['nullable', 'string'],
             'zone_id' => ['required', 'string'],
         ]);
 
-        try {
-            $isValid = app(CloudflareService::class)->verifyConnection($request->api_token, $request->zone_id);
-
-            if (! $isValid) {
-                return back()->withErrors([
-                    'api_token' => 'Could not connect to Cloudflare. Please check your Token and Zone ID.',
-                    'zone_id' => 'Verification failed',
-                ])->withInput();
-            }
-
-            // Force update the settings array
-            $settings = $project->settings ?? [];
-            $settings['cloudflare'] = [
-                'api_token' => $request->api_token,
-                'zone_id' => $request->zone_id,
-            ];
-
-            $project->settings = $settings;
-            $project->save();
-
-            return back()->with('success', 'Cloudflare settings updated and verified successfully.');
-        } catch (\Exception $e) {
-            \Log::error('Cloudflare Save Error: '.$e->getMessage());
-
-            return back()->withErrors(['api_token' => 'An unexpected error occurred while saving.'])->withInput();
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
         }
+
+        $input = $validator->validated();
+        $token = ($input['api_token'] ?? null) ?: data_get($project->settings, 'cloudflare.api_token');
+        $zoneId = $input['zone_id'];
+
+        if (! $token) {
+            return back()->withErrors(['api_token' => 'Enter a Cloudflare API token.']);
+        }
+
+        if (! app(CloudflareService::class)->verifyConnection($token, $zoneId)) {
+            return back()->withErrors([
+                'api_token' => 'Could not connect to Cloudflare. Check the token and Zone ID.',
+            ]);
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($project, $token, $zoneId) {
+            $current = Project::query()->lockForUpdate()->findOrFail($project->id);
+            $settings = $current->settings ?? [];
+            $settings['cloudflare'] = ['api_token' => $token, 'zone_id' => $zoneId];
+            $current->update(['settings' => $settings]);
+        });
+
+        return back()->with('success', 'Cloudflare settings updated and verified successfully.');
     }
 
     public function store(Request $request, Team $current_team, CreateProject $createProject)

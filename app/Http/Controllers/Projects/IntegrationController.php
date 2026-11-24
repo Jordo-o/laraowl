@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Integration;
 use App\Models\Project;
 use App\Models\Team;
+use App\Services\CloudflareService;
 use App\Services\IntegrationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +16,10 @@ class IntegrationController extends Controller
     public function index(Request $request, Team $current_team, Project $project, IntegrationService $service)
     {
         return Inertia::render('projects/settings/index', [
+            'cloudflare' => [
+                'configured' => app(CloudflareService::class)->isConfigured($project),
+                'zone_id' => data_get($project->settings, 'cloudflare.zone_id'),
+            ],
             'project' => $project->makeVisible(['api_token'])->load(['integrations', 'alertRules.integrations', 'thresholds']),
             'integrations' => $project->integrations,
             'alert_rules' => $project->alertRules,

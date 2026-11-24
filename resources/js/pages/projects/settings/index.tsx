@@ -74,6 +74,7 @@ export default function ProjectSettings({
     project,
     integrations,
     alert_rules,
+    cloudflare,
     available_types,
 }: any) {
     const { props } = usePage<SharedData>();
@@ -123,8 +124,8 @@ export default function ProjectSettings({
 
     // Cloudflare Form
     const cloudflareForm = useForm({
-        api_token: project.settings?.cloudflare?.api_token || '',
-        zone_id: project.settings?.cloudflare?.zone_id || '',
+        api_token: '',
+        zone_id: cloudflare?.zone_id ?? '',
     });
 
     const [activeTab, setActiveTab] = useState(() => {
@@ -152,7 +153,10 @@ export default function ProjectSettings({
     const handleUpdateCloudflare = (e: React.FormEvent) => {
         e.preventDefault();
         cloudflareForm.patch(`/${teamSlug}/${projectSlug}/cloudflare`, {
-            onSuccess: () => toast.success('Cloudflare settings updated'),
+            onSuccess: () => {
+                cloudflareForm.reset('api_token');
+                toast.success('Cloudflare settings updated');
+            },
         });
     };
 
@@ -1964,9 +1968,9 @@ export default function ProjectSettings({
                                                 Cloudflare Integration
                                             </CardTitle>
                                             <CardDescription className="text-xs">
-                                                Connect your zone to enable edge
-                                                security metrics and rule
-                                                management.
+                                                {cloudflare?.configured
+                                                    ? 'Configured. Leave the API token blank to keep the saved token.'
+                                                    : 'Connect your zone to enable edge security metrics and rule management.'}
                                             </CardDescription>
                                         </div>
                                     </div>
@@ -1987,7 +1991,9 @@ export default function ProjectSettings({
                                                 <Input
                                                     id="api_token"
                                                     type="password"
-                                                    placeholder="Enter your Cloudflare API Token"
+                                                    placeholder={cloudflare?.configured
+                                                        ? 'Saved token'
+                                                        : 'Enter your Cloudflare API token'}
                                                     className={`h-11 border-border bg-muted/50 font-mono text-xs focus:ring-primary/20 ${cloudflareForm.errors.api_token ? 'border-red-500 ring-1 ring-red-500/20' : ''}`}
                                                     value={
                                                         cloudflareForm.data
@@ -2110,7 +2116,7 @@ export default function ProjectSettings({
                                                 ) : (
                                                     <Zap className="mr-2 size-3.5 fill-current" />
                                                 )}
-                                                Save Integration
+                                                {cloudflare?.configured ? 'Update integration' : 'Save integration'}
                                             </Button>
                                         </div>
                                     </form>
