@@ -75,6 +75,7 @@ export default function ProjectSettings({
     integrations,
     alert_rules,
     available_types,
+    security_response,
 }: any) {
     const { props } = usePage<SharedData>();
     const teamSlug = props.currentTeam?.slug || '';
@@ -117,6 +118,8 @@ export default function ProjectSettings({
         uptime_monitoring_enabled: project.uptime_monitoring_enabled ?? true,
         uptime_check_interval: project.uptime_check_interval || 60,
         retention_days: project.retention_days || 7,
+        security_issue_level: security_response?.issue_level ?? 'off',
+        security_cloudflare_block_level: security_response?.cloudflare_block_level ?? 'off',
         logo: null as File | null,
         _method: 'PATCH', // For file uploads with PATCH
     });
@@ -1009,6 +1012,39 @@ export default function ProjectSettings({
                                                     </p>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        <div className="space-y-4 border-t border-border pt-4">
+                                            <h3 className="font-semibold">Security response</h3>
+                                            {([
+                                                ['security_issue_level', 'Create traffic issues at'],
+                                                ['security_cloudflare_block_level', 'Block IPs in Cloudflare at'],
+                                            ] as const).map(([field, label]) => (
+                                                <div key={field} className="space-y-2">
+                                                    <Label htmlFor={field}>{label}</Label>
+                                                    <Select
+                                                        value={generalForm.data[field]}
+                                                        onValueChange={(value) => generalForm.setData(field, value)}
+                                                    >
+                                                        <SelectTrigger id={field}>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="off">Off</SelectItem>
+                                                            <SelectItem value="low">Low</SelectItem>
+                                                            <SelectItem value="medium">Medium</SelectItem>
+                                                            <SelectItem value="high">High</SelectItem>
+                                                            <SelectItem value="critical">Critical</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {generalForm.errors[field] && (
+                                                        <p className="text-sm text-destructive">{generalForm.errors[field]}</p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <p className="text-sm text-muted-foreground">
+                                                Cloudflare blocks apply to the project hostname for one hour. The API token needs Zone WAF write access.
+                                            </p>
                                         </div>
 
                                         <div className="flex justify-end border-t border-border pt-4">

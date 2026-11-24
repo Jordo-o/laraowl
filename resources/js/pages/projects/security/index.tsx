@@ -8,6 +8,7 @@ import {
     ShieldAlert,
 } from 'lucide-react';
 import { IssueTable } from '@/components/issue-table';
+import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLiveReload } from '@/hooks/use-live-reload';
@@ -15,6 +16,12 @@ import AppLayout from '@/layouts/app-layout';
 
 interface SecurityProps {
     threats: any;
+    detections: {
+        total: number;
+        last_page: number;
+        data: { id: number; at: string; ip: string; level: string; score: number | null; block: { status: string; expires_at?: string } | null }[];
+        links: { url: string | null; label: string; active: boolean }[];
+    };
     overview: {
         unique_ips: number;
         total_scanned: number;
@@ -26,6 +33,7 @@ interface SecurityProps {
 
 export default function SecurityIndex({
     threats,
+    detections,
     overview,
     period,
 }: SecurityProps) {
@@ -48,13 +56,13 @@ export default function SecurityIndex({
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     {[
                         {
-                            title: 'Active Threats',
-                            value: threats.total,
+                            title: 'Traffic Detections',
+                            value: detections.total,
                             icon: AlertTriangle,
                             color: 'text-primary',
                         },
                         {
-                            title: 'Attacking IPs',
+                            title: 'Unique IPs',
                             value: overview.unique_ips,
                             icon: Globe,
                             color: 'text-primary',
@@ -173,6 +181,31 @@ export default function SecurityIndex({
                         </CardContent>
                     </Card>
                 </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="font-semibold">Suspicious traffic</h2>
+                <Card className="space-y-3 p-4">
+                    {detections.data.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No traffic detections in this period.</p>
+                    )}
+                    {detections.data.map((detection) => (
+                        <div key={detection.id} className="flex flex-wrap items-center gap-3 text-sm">
+                            <span className="font-mono">{detection.ip}</span>
+                            <Badge variant="outline" className="capitalize">{detection.level}</Badge>
+                            <span>{detection.score}</span>
+                            <time dateTime={detection.at}>{new Date(detection.at).toLocaleString()}</time>
+                            {detection.block && (
+                                <span className="text-muted-foreground">
+                                    {detection.block.status === 'active' && detection.block.expires_at
+                                        ? `Blocked until ${new Date(detection.block.expires_at).toLocaleString()}`
+                                        : 'Cloudflare block failed'}
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                    <Pagination meta={detections} />
+                </Card>
             </section>
 
             {/* Section: Threats List */}

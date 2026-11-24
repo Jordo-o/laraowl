@@ -777,6 +777,19 @@ class RecordService
             ]);
 
         return [
+            'detections' => $records
+                ->whereNotNull('payload->_security_risk')
+                ->latest()
+                ->paginate(20, ['id', 'payload', 'created_at'], 'detections_page')
+                ->withQueryString()
+                ->through(fn (Record $record) => [
+                    'id' => $record->id,
+                    'at' => $record->created_at,
+                    'ip' => $record->payload['ip'] ?? 'Unknown',
+                    'level' => $record->payload['_security_risk'],
+                    'score' => $record->payload['_security_score'] ?? null,
+                    'block' => $record->payload['_security_cloudflare_block'] ?? null,
+                ]),
             'threats' => $project->issues()
                 ->where('type', 'security')
                 ->where('project_id', $project->id)

@@ -16,6 +16,10 @@ class IntegrationController extends Controller
     {
         return Inertia::render('projects/settings/index', [
             'project' => $project->makeVisible(['api_token'])->load(['integrations', 'alertRules.integrations', 'thresholds']),
+            'security_response' => [
+                'issue_level' => data_get($project->settings, 'security_response.issue_level', 'off'),
+                'cloudflare_block_level' => data_get($project->settings, 'security_response.cloudflare_block_level', 'off'),
+            ],
             'integrations' => $project->integrations,
             'alert_rules' => $project->alertRules,
             'available_types' => $service->getAvailableTypes(),
