@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\ApplyCloudflareSecurityBlock;
 use App\Models\Project;
 use App\Models\Record;
 use Illuminate\Support\Facades\Cache;
@@ -230,9 +231,24 @@ class SecurityService
 
         $riskLevel = $this->getRiskLevel($cumulativeScore);
 
-        // Report
-        $hash = md5("security_{$riskLevel}_{$ip}");
-        $title = 'Security Issue: '.strtoupper($riskLevel)." Risk from $ip";
+        $policy = $project->settings['security_response'] ?? [];
+        $payload = $record->payload;
+        $payload['_security_threats'] = $threats;
+        $payload['_security_score'] = $cumulativeScore;
+        $payload['_security_risk'] = $riskLevel;
+        $record->update(['payload' => $payload]);
+
+        if (self::meetsThreshold($riskLevel, $policy['cloudflare_block_level'] ?? 'off')
+            && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE)) {
+            ApplyCloudflareSecurityBlock::dispatch($project->id, $record->id, $ip, $riskLevel)->afterCommit();
+        }
+
+        if (! self::meetsThreshold($riskLevel, $policy['issue_level'] ?? 'off')) {
+            return;
+        }
+
+        $hash = md5("security_traffic_{$ip}");
+        $title = "Suspicious traffic from $ip";
         $message = "Cumulative Threat Score: $cumulativeScore. Detected: ".collect($threats)->pluck('type')->unique()->implode(', ');
 
         $issue = $project->issues()->firstOrCreate(
@@ -249,19 +265,23 @@ class SecurityService
         );
 
         $issue->increment('occurrences_count');
-        $issue->update([
-            'last_seen_at' => now(),
-            'message' => $message,
-        ]);
+        $issue->update(['last_seen_at' => now(), 'message' => $message]);
+
+        $lowerPriorities = array_values(array_filter(
+            ['low', 'medium', 'high', 'critical'],
+            fn (string $priority) => $priority !== $riskLevel && self::meetsThreshold($riskLevel, $priority),
+        ));
+        $project->issues()->whereKey($issue->id)->whereIn('priority', $lowerPriorities)
+            ->update(['priority' => $this->getPriority($riskLevel)]);
 
         $record->update(['issue_id' => $issue->id]);
+    }
 
-        // Tag the record
-        $payload = $record->payload;
-        $payload['_security_threats'] = $threats;
-        $payload['_security_score'] = $cumulativeScore;
-        $payload['_security_risk'] = $riskLevel;
-        $record->update(['payload' => $payload]);
+    public static function meetsThreshold(string $risk, string $threshold): bool
+    {
+        $levels = ['low' => 0, 'medium' => 1, 'high' => 2, 'critical' => 3];
+
+        return isset($levels[$risk], $levels[$threshold]) && $levels[$risk] >= $levels[$threshold];
     }
 
     protected function getRiskLevel(int $score): string

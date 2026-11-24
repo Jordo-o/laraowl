@@ -8,12 +8,16 @@ use App\Models\Project;
 use App\Models\Team;
 use App\Services\CloudflareService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
 {
     public function update(Request $request, Team $current_team, Project $project)
     {
-        $request->validate([
+        $validated = $request->validate([
+            'security_issue_level' => ['sometimes', 'required', 'in:off,low,medium,high,critical'],
+            'security_cloudflare_block_level' => ['sometimes', 'required', 'in:off,low,medium,high,critical'],
             'name' => ['required', 'string', 'max:255'],
             'url' => ['nullable', 'url', 'max:255'],
             'uptime_monitoring_enabled' => ['sometimes', 'boolean'],
@@ -43,7 +47,30 @@ class ProjectController extends Controller
             $attributes['last_uptime_check_at'] = null;
         }
 
-        $project->update($attributes);
+        DB::transaction(function () use ($project, $attributes, $validated) {
+            $current = Project::query()->lockForUpdate()->findOrFail($project->id);
+            $settings = $current->settings ?? [];
+
+            if (isset($validated['security_issue_level'])) {
+                $settings['security_response']['issue_level'] = $validated['security_issue_level'];
+            }
+
+            if (isset($validated['security_cloudflare_block_level'])) {
+                $level = $validated['security_cloudflare_block_level'];
+                $hostname = parse_url($attributes['url'] ?? '', PHP_URL_HOST);
+
+                if ($level !== 'off' && (! app(CloudflareService::class)->isConfigured($current)
+                    || ! is_string($hostname) || ! filter_var($hostname, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME))) {
+                    throw ValidationException::withMessages([
+                        'security_cloudflare_block_level' => 'Configure Cloudflare and a valid project URL before enabling automatic blocking.',
+                    ]);
+                }
+
+                $settings['security_response']['cloudflare_block_level'] = $level;
+            }
+
+            $current->update([...$attributes, 'settings' => $settings]);
+        });
 
         if ($request->hasFile('logo')) {
             $project->clearMediaCollection('logo');
