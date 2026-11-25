@@ -687,16 +687,37 @@ export default function RecordShow({
     );
 }
 
-RecordShow.layout = (props: Parameters<typeof projectIndexHref>[0] & { record?: { type: string } }) => ({
-    breadcrumbs: [
-        ...(props.record?.type === 'request'
-            ? [
-                  {
-                      title: 'Requests',
-                      href: projectIndexHref(props, 'requests'),
-                  },
-              ]
-            : []),
-        { title: 'Details', href: '#' },
-    ],
-});
+const recordOverviews = new Map<string, { title: string; section: string }>([
+    ['request', { title: 'Requests', section: 'requests' }],
+    ['job-attempt', { title: 'Jobs', section: 'jobs' }],
+    ['queued-job', { title: 'Jobs', section: 'jobs' }],
+    ['command', { title: 'Commands', section: 'commands' }],
+    ['scheduled-task', { title: 'Scheduled Tasks', section: 'scheduled-tasks' }],
+    ['exception', { title: 'Exceptions', section: 'exceptions' }],
+    ['query', { title: 'Queries', section: 'queries' }],
+    ['notification', { title: 'Notifications', section: 'notifications' }],
+    ['mail', { title: 'Mail', section: 'mail' }],
+    ['outgoing-request', { title: 'Outgoing Requests', section: 'outgoing-requests' }],
+    ['cache-event', { title: 'Cache', section: 'cache' }],
+    ['log', { title: 'Logs', section: 'logs' }],
+    ['user', { title: 'Users', section: 'users' }],
+    ['auth-event', { title: 'Security', section: 'security' }],
+]);
+
+RecordShow.layout = (
+    props: Parameters<typeof projectIndexHref>[0] & { record?: { type: string } },
+) => {
+    const overview = props.record && recordOverviews.get(props.record.type);
+    const breadcrumbs = overview
+        ? [
+              {
+                  title: overview.title,
+                  href: projectIndexHref(props, overview.section),
+              },
+          ]
+        : [];
+
+    breadcrumbs.push({ title: 'Details', href: '#' });
+
+    return { breadcrumbs };
+};
