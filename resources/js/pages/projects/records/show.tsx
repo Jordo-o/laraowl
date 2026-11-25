@@ -20,6 +20,7 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import AppLayout from '@/layouts/app-layout';
+import { projectIndexHref } from '@/lib/project-index-href';
 
 // A label/value row, used by the mail details block
 const Row = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -691,7 +692,14 @@ RecordShow.layout = (page: any) => (
     <AppLayout
         children={page}
         breadcrumbs={[
-            { title: 'Records', href: '#' },
+            ...(page.props.record.type === 'request'
+                ? [
+                      {
+                          title: 'Requests',
+                          href: projectIndexHref(page.props, 'requests'),
+                      },
+                  ]
+                : []),
             { title: 'Details', href: '#' },
         ]}
     />

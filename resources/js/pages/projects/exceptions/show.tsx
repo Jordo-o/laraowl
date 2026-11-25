@@ -16,6 +16,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { projectIndexHref } from '@/lib/project-index-href';
 import { formatCompactNumber } from '@/lib/utils';
 import { show as showRecord } from '@/routes/records';
 
@@ -308,7 +309,7 @@ ExceptionDetails.layout = (page: any) => (
     <AppLayout
         children={page}
         breadcrumbs={[
-            { title: 'Exceptions', href: '#' },
+            { title: 'Exceptions', href: projectIndexHref(page.props, 'exceptions') },
             { title: 'Details', href: '#' },
         ]}
     />

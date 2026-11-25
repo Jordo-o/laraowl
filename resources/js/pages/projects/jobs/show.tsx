@@ -11,6 +11,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { projectIndexHref } from '@/lib/project-index-href';
 import { formatMicroSeconds } from '@/lib/utils';
 import { show as showRecord } from '@/routes/records';
 
@@ -135,7 +136,7 @@ JobShow.layout = (page: any) => (
     <AppLayout
         children={page}
         breadcrumbs={[
-            { title: 'Jobs', href: '#' },
+            { title: 'Jobs', href: projectIndexHref(page.props, 'jobs') },
             { title: 'Details', href: '#' },
         ]}
     />

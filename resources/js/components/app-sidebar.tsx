@@ -261,6 +261,9 @@ export function AppSidebar() {
 
             <SidebarFooter className="border-t border-sidebar-border p-4">
                 <NavUser />
+                <p className="px-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                    v{props.version}
+                </p>
             </SidebarFooter>
         </Sidebar>
     );
