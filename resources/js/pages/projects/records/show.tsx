@@ -687,17 +687,133 @@ export default function RecordShow({
     );
 }
 
-const recordOverviews = new Map<string, { title: string; section: string }>([
-    ['request', { title: 'Requests', section: 'requests' }],
-    ['job-attempt', { title: 'Jobs', section: 'jobs' }],
-    ['queued-job', { title: 'Jobs', section: 'jobs' }],
-    ['command', { title: 'Commands', section: 'commands' }],
-    ['scheduled-task', { title: 'Scheduled Tasks', section: 'scheduled-tasks' }],
-    ['exception', { title: 'Exceptions', section: 'exceptions' }],
-    ['query', { title: 'Queries', section: 'queries' }],
-    ['notification', { title: 'Notifications', section: 'notifications' }],
-    ['mail', { title: 'Mail', section: 'mail' }],
-    ['outgoing-request', { title: 'Outgoing Requests', section: 'outgoing-requests' }],
+type RecordOverview = {
+    title: string;
+    section: string;
+    group?: { path: string; title: string; fields: string[] };
+};
+
+const recordOverviews = new Map<string, RecordOverview>([
+    [
+        'request',
+        {
+            title: 'Requests',
+            section: 'requests',
+            group: {
+                path: 'routes',
+                title: 'Route',
+                fields: ['path', 'route_path'],
+            },
+        },
+    ],
+    [
+        'job-attempt',
+        {
+            title: 'Jobs',
+            section: 'jobs',
+            group: {
+                path: 'types',
+                title: 'Job',
+                fields: ['name', 'job', 'job_class', 'class'],
+            },
+        },
+    ],
+    [
+        'queued-job',
+        {
+            title: 'Jobs',
+            section: 'jobs',
+            group: {
+                path: 'types',
+                title: 'Job',
+                fields: ['name', 'job', 'job_class', 'class'],
+            },
+        },
+    ],
+    [
+        'command',
+        {
+            title: 'Commands',
+            section: 'commands',
+            group: {
+                path: 'types',
+                title: 'Command',
+                fields: ['command'],
+            },
+        },
+    ],
+    [
+        'scheduled-task',
+        {
+            title: 'Scheduled Tasks',
+            section: 'scheduled-tasks',
+            group: {
+                path: 'tasks',
+                title: 'Scheduled Task',
+                fields: ['command', 'name', 'job'],
+            },
+        },
+    ],
+    [
+        'exception',
+        {
+            title: 'Exceptions',
+            section: 'exceptions',
+            group: {
+                path: 'types',
+                title: 'Exception',
+                fields: ['class'],
+            },
+        },
+    ],
+    [
+        'query',
+        {
+            title: 'Queries',
+            section: 'queries',
+            group: {
+                path: 'statements',
+                title: 'Statement',
+                fields: [],
+            },
+        },
+    ],
+    [
+        'notification',
+        {
+            title: 'Notifications',
+            section: 'notifications',
+            group: {
+                path: 'channels',
+                title: 'Notification',
+                fields: ['notification_class', 'channel'],
+            },
+        },
+    ],
+    [
+        'mail',
+        {
+            title: 'Mail',
+            section: 'mail',
+            group: {
+                path: 'mailables',
+                title: 'Mailable',
+                fields: ['mailable_class', 'class', 'mailable', 'name'],
+            },
+        },
+    ],
+    [
+        'outgoing-request',
+        {
+            title: 'Outgoing Requests',
+            section: 'outgoing-requests',
+            group: {
+                path: 'destinations',
+                title: 'Destination',
+                fields: ['host'],
+            },
+        },
+    ],
     ['cache-event', { title: 'Cache', section: 'cache' }],
     ['log', { title: 'Logs', section: 'logs' }],
     ['user', { title: 'Users', section: 'users' }],
@@ -705,17 +821,37 @@ const recordOverviews = new Map<string, { title: string; section: string }>([
 ]);
 
 RecordShow.layout = (
-    props: Parameters<typeof projectIndexHref>[0] & { record?: { type: string } },
+    props: Parameters<typeof projectIndexHref>[0] & {
+        record?: {
+            type: string;
+            fingerprint?: string | null;
+            payload?: Record<string, unknown> | null;
+        };
+    },
 ) => {
-    const overview = props.record && recordOverviews.get(props.record.type);
-    const breadcrumbs = overview
-        ? [
-              {
-                  title: overview.title,
-                  href: projectIndexHref(props, overview.section),
-              },
-          ]
-        : [];
+    const { record } = props;
+    const overview = record && recordOverviews.get(record.type);
+    const breadcrumbs = [];
+
+    if (overview) {
+        const href = projectIndexHref(props, overview.section);
+        breadcrumbs.push({ title: overview.title, href });
+
+        if (overview.group && record?.fingerprint && href !== '/dashboard') {
+            const { path, title, fields } = overview.group;
+            const name = fields
+                .map((field) => record.payload?.[field])
+                .find((value) => typeof value === 'string' && value.trim());
+
+            breadcrumbs.push({
+                title: typeof name === 'string' ? name : title,
+                href: projectIndexHref(
+                    props,
+                    `${overview.section}/${path}/${encodeURIComponent(record.fingerprint)}`,
+                ),
+            });
+        }
+    }
 
     breadcrumbs.push({ title: 'Details', href: '#' });
 
