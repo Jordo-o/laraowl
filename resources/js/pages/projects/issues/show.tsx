@@ -28,7 +28,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 
 export default function IssueShow({
@@ -504,12 +503,9 @@ export default function IssueShow({
     );
 }
 
-IssueShow.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Issues', href: projectIndexHref(page.props, 'issues') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+IssueShow.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Issues', href: projectIndexHref(props, 'issues') },
+        { title: 'Details', href: '#' },
+    ],
+});

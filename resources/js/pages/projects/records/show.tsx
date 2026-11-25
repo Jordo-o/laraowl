@@ -19,7 +19,6 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 
 // A label/value row, used by the mail details block
@@ -688,19 +687,16 @@ export default function RecordShow({
     );
 }
 
-RecordShow.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            ...(page.props.record.type === 'request'
-                ? [
-                      {
-                          title: 'Requests',
-                          href: projectIndexHref(page.props, 'requests'),
-                      },
-                  ]
-                : []),
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+RecordShow.layout = (props: Parameters<typeof projectIndexHref>[0] & { record?: { type: string } }) => ({
+    breadcrumbs: [
+        ...(props.record?.type === 'request'
+            ? [
+                  {
+                      title: 'Requests',
+                      href: projectIndexHref(props, 'requests'),
+                  },
+              ]
+            : []),
+        { title: 'Details', href: '#' },
+    ],
+});

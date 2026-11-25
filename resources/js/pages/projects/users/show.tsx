@@ -11,7 +11,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import {
     formatMicroSeconds,
@@ -276,12 +275,9 @@ export default function UserShow({
     );
 }
 
-UserShow.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Users', href: projectIndexHref(page.props, 'users') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+UserShow.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Users', href: projectIndexHref(props, 'users') },
+        { title: 'Details', href: '#' },
+    ],
+});

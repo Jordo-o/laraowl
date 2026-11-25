@@ -10,7 +10,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import { show as showRecord } from '@/routes/records';
 
@@ -126,12 +125,9 @@ export default function NotificationShow({
     );
 }
 
-NotificationShow.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Notifications', href: projectIndexHref(page.props, 'notifications') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+NotificationShow.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Notifications', href: projectIndexHref(props, 'notifications') },
+        { title: 'Details', href: '#' },
+    ],
+});

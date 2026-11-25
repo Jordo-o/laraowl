@@ -10,7 +10,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import { formatMicroSeconds } from '@/lib/utils';
 import { show as showRecord } from '@/routes/records';
@@ -132,12 +131,9 @@ export default function JobShow({
     );
 }
 
-JobShow.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Jobs', href: projectIndexHref(page.props, 'jobs') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+JobShow.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Jobs', href: projectIndexHref(props, 'jobs') },
+        { title: 'Details', href: '#' },
+    ],
+});
