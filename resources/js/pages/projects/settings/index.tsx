@@ -77,6 +77,7 @@ export default function ProjectSettings({
     cloudflare,
     available_types,
     security_response,
+    transfer_teams = [],
 }: any) {
     const { props } = usePage<SharedData>();
     const teamSlug = props.currentTeam?.slug || '';
@@ -124,6 +125,8 @@ export default function ProjectSettings({
         logo: null as File | null,
         _method: 'PATCH', // For file uploads with PATCH
     });
+
+    const transferForm = useForm({ team_id: '' });
 
     // Cloudflare Form
     const cloudflareForm = useForm({
@@ -1068,6 +1071,54 @@ export default function ProjectSettings({
                                     </form>
                                 </CardContent>
                             </Card>
+
+                            {transfer_teams.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Move project</CardTitle>
+                                        <CardDescription>
+                                            The destination team will gain access to the project and its monitoring data.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <form
+                                            className="space-y-3"
+                                            onSubmit={(event) => {
+                                                event.preventDefault();
+
+                                                if (window.confirm('Move this project and its monitoring data to the selected team?')) {
+                                                    transferForm.patch(`/${teamSlug}/${projectSlug}/transfer`);
+                                                }
+                                            }}
+                                        >
+                                            <Label htmlFor="destination-team">Destination team</Label>
+                                            <Select
+                                                value={transferForm.data.team_id}
+                                                onValueChange={(id) => transferForm.setData('team_id', id)}
+                                            >
+                                                <SelectTrigger id="destination-team">
+                                                    <SelectValue placeholder="Select a team" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {transfer_teams.map((team: { id: number; name: string }) => (
+                                                        <SelectItem key={team.id} value={String(team.id)}>
+                                                            {team.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {transferForm.errors.team_id && (
+                                                <p role="alert" className="text-sm text-destructive">
+                                                    {transferForm.errors.team_id}
+                                                </p>
+                                            )}
+                                            <Button type="submit" disabled={!transferForm.data.team_id || transferForm.processing}>
+                                                Move project
+                                            </Button>
+                                        </form>
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             <Card>
                                 <CardHeader>
