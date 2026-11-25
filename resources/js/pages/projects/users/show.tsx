@@ -12,6 +12,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { projectIndexHref } from '@/lib/project-index-href';
 import {
     formatMicroSeconds,
     formatCompactNumber,
@@ -279,7 +280,7 @@ UserShow.layout = (page: any) => (
     <AppLayout
         children={page}
         breadcrumbs={[
-            { title: 'Users', href: '#' },
+            { title: 'Users', href: projectIndexHref(page.props, 'users') },
             { title: 'Details', href: '#' },
         ]}
     />

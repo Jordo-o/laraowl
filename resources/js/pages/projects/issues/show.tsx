@@ -29,6 +29,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { projectIndexHref } from '@/lib/project-index-href';
 
 export default function IssueShow({
     issue,
@@ -507,7 +508,7 @@ IssueShow.layout = (page: any) => (
     <AppLayout
         children={page}
         breadcrumbs={[
-            { title: 'Issues', href: '#' },
+            { title: 'Issues', href: projectIndexHref(page.props, 'issues') },
             { title: 'Details', href: '#' },
         ]}
     />
