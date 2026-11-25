@@ -98,7 +98,7 @@ class ProjectController extends Controller
             $lockedProject->update(['team_id' => $destination->id]);
             $lockedProject->issues()
                 ->whereNotNull('assigned_to')
-                ->whereNotIn('assigned_to', $destination->users()->select('users.id')->getQuery())
+                ->whereNotIn('assigned_to', $destination->members()->select('users.id')->getQuery())
                 ->update(['assigned_to' => null]);
         });
 
