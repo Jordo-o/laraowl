@@ -15,7 +15,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import { formatCompactNumber } from '@/lib/utils';
 import { show as showRecord } from '@/routes/records';
@@ -305,12 +304,9 @@ export default function ExceptionDetails({
     );
 }
 
-ExceptionDetails.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Exceptions', href: projectIndexHref(page.props, 'exceptions') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+ExceptionDetails.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Exceptions', href: projectIndexHref(props, 'exceptions') },
+        { title: 'Details', href: '#' },
+    ],
+});

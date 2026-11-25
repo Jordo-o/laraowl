@@ -10,7 +10,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import { formatValue } from '@/lib/utils';
 import { show as showRecord } from '@/routes/records';
@@ -148,12 +147,9 @@ export default function MailShow({
     );
 }
 
-MailShow.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Mail', href: projectIndexHref(page.props, 'mail') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+MailShow.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Mail', href: projectIndexHref(props, 'mail') },
+        { title: 'Details', href: '#' },
+    ],
+});

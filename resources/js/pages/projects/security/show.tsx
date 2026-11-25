@@ -17,7 +17,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import { show as showRecord } from '@/routes/records';
 
@@ -362,12 +361,9 @@ export default function SecurityDetails({
     );
 }
 
-SecurityDetails.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Security', href: projectIndexHref(page.props, 'security') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+SecurityDetails.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Security', href: projectIndexHref(props, 'security') },
+        { title: 'Details', href: '#' },
+    ],
+});

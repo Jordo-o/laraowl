@@ -10,7 +10,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import { formatMicroSeconds, formatCompactNumber } from '@/lib/utils';
 import { show as showRecord } from '@/routes/records';
@@ -149,12 +148,9 @@ export default function ScheduledTaskDetails({
     );
 }
 
-ScheduledTaskDetails.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Scheduled Tasks', href: projectIndexHref(page.props, 'scheduled-tasks') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+ScheduledTaskDetails.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Scheduled Tasks', href: projectIndexHref(props, 'scheduled-tasks') },
+        { title: 'Details', href: '#' },
+    ],
+});

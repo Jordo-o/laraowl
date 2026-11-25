@@ -10,7 +10,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
 import { projectIndexHref } from '@/lib/project-index-href';
 import { formatMicroSeconds, formatCompactNumber } from '@/lib/utils';
 import { show as showRecord } from '@/routes/records';
@@ -170,12 +169,9 @@ export default function RequestDetails({
     );
 }
 
-RequestDetails.layout = (page: any) => (
-    <AppLayout
-        children={page}
-        breadcrumbs={[
-            { title: 'Requests', href: projectIndexHref(page.props, 'requests') },
-            { title: 'Details', href: '#' },
-        ]}
-    />
-);
+RequestDetails.layout = (props: Parameters<typeof projectIndexHref>[0]) => ({
+    breadcrumbs: [
+        { title: 'Requests', href: projectIndexHref(props, 'requests') },
+        { title: 'Details', href: '#' },
+    ],
+});
