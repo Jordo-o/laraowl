@@ -21,11 +21,11 @@ export function AppSidebarHeader({
             : props.breadcrumbs || [];
 
     return (
-        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-md transition-all md:px-6">
-            <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/80 px-6 backdrop-blur-md transition-all md:px-6">
+            <div className="flex min-w-0 items-center gap-4">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <SidebarTrigger className="-ml-1" />
+                        <SidebarTrigger className="-ml-1 shrink-0" />
                     </TooltipTrigger>
                     <TooltipContent side="bottom" align="start">
                         Toggle Sidebar (Ctrl/⌘ + B)
@@ -33,7 +33,7 @@ export function AppSidebarHeader({
                 </Tooltip>
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex shrink-0 items-center gap-4">
                 <TimeFilter />
             </div>
         </header>
