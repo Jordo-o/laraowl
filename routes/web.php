@@ -122,6 +122,7 @@ Route::prefix('{current_team}/{project}')
 
         Route::patch('/', [ProjectController::class, 'update'])->name('projects.update');
         Route::patch('cloudflare', [ProjectController::class, 'updateCloudflare'])->name('projects.cloudflare');
+        Route::patch('transfer', [ProjectController::class, 'transfer'])->name('projects.transfer');
         Route::delete('/', [ProjectController::class, 'destroy'])->name('projects.destroy');
 
         Route::get('settings', [IntegrationController::class, 'index'])->name('project.settings');

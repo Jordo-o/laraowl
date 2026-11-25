@@ -16,6 +16,15 @@ class IntegrationController extends Controller
     public function index(Request $request, Team $current_team, Project $project, IntegrationService $service)
     {
         return Inertia::render('projects/settings/index', [
+            'transfer_teams' => $request->user()->ownsTeam($current_team)
+                ? $request->user()->teams()
+                    ->wherePivot('role', 'owner')
+                    ->where('teams.id', '!=', $current_team->id)
+                    ->orderBy('teams.name')
+                    ->get(['teams.id', 'teams.name'])
+                    ->map->only(['id', 'name'])
+                    ->values()
+                : [],
             'cloudflare' => [
                 'configured' => app(CloudflareService::class)->isConfigured($project),
                 'zone_id' => data_get($project->settings, 'cloudflare.zone_id'),

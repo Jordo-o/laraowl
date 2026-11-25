@@ -80,6 +80,34 @@ class ProjectController extends Controller
         return back()->with('success', 'Project updated successfully.');
     }
 
+    public function transfer(Request $request, Team $current_team, Project $project)
+    {
+        $user = $request->user();
+        abort_unless($user->ownsTeam($current_team), 403);
+
+        $validated = $request->validate(['team_id' => ['required', 'integer']]);
+        $destination = Team::query()->findOrFail($validated['team_id']);
+        abort_unless($user->ownsTeam($destination), 403);
+
+        if ($destination->id === $current_team->id) {
+            throw ValidationException::withMessages(['team_id' => 'Choose a different team.']);
+        }
+
+        DB::transaction(function () use ($current_team, $project, $destination) {
+            $lockedProject = $current_team->projects()->lockForUpdate()->findOrFail($project->id);
+            $lockedProject->update(['team_id' => $destination->id]);
+            $lockedProject->issues()
+                ->whereNotNull('assigned_to')
+                ->whereNotIn('assigned_to', $destination->users()->select('users.id')->getQuery())
+                ->update(['assigned_to' => null]);
+        });
+
+        return redirect()->route('project.settings', [
+            'current_team' => $destination,
+            'project' => $project,
+        ])->with('success', 'Project moved successfully.');
+    }
+
     public function destroy(Team $current_team, Project $project)
     {
         $project->delete();
