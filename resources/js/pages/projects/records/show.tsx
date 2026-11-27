@@ -362,7 +362,7 @@ export default function RecordShow({
                                     IP
                                 </span>
                                 <span className="font-mono text-sm text-foreground/90">
-                                    {payload.ip || '127.0.0.1'}
+                                    {record.ip || payload.ip || 'Unknown'}
                                 </span>
                             </div>
                             {isRequest && (
