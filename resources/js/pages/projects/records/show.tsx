@@ -20,6 +20,7 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { projectIndexHref } from '@/lib/project-index-href';
+import { requestDeviceLabel } from '@/lib/request-device-label';
 
 // A label/value row, used by the mail details block
 const Row = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -131,6 +132,7 @@ export default function RecordShow({
     };
 
     const isRequest = record.type === 'request';
+    const deviceLabel = isRequest ? requestDeviceLabel(payload.headers) : null;
     const isJob = ['job-attempt', 'queued-job'].includes(record.type);
     const isCommand = ['command', 'scheduled-task'].includes(record.type);
     const isQuery = record.type === 'query';
@@ -360,9 +362,14 @@ export default function RecordShow({
                                     IP
                                 </span>
                                 <span className="font-mono text-sm text-foreground/90">
-                                    {payload.ip || '127.0.0.1'}
+                                    {record.ip || payload.ip || 'Unknown'}
                                 </span>
                             </div>
+                            {isRequest && (
+                                <Row label="Device">
+                                    {deviceLabel ?? 'Unknown'}
+                                </Row>
+                            )}
                         </div>
 
                         {!isMail && (
